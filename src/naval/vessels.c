@@ -1,5 +1,7 @@
 #include "vessels.h"
 #include "../static/utils.h"
+#include <stdlib.h>
+#include <string.h>
 
 uint16_t vessel_count = 0;
 
@@ -96,4 +98,83 @@ vessel_state_s *init_vessel_state(vessel_s *d)
     vs->run_away = false;
 
     return vs;
+}
+
+bool vessel_parse_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_parsed)
+{
+    bool is_error = false;
+    uint8_t team_count = 0;
+    int tmp_type = 0;
+    int tmp_count = 0;
+    vessel_type_e type;
+    uint16_t count;
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (strcmp(argv[i], "team") == 0)
+        {
+            team_count++;
+            continue;
+        }
+        else if (team_count > 2)
+        {
+            perror("Too many teams\n");
+            is_error = true;
+        }
+        else if (team_count == 0)
+        {
+            perror("Team settler argument absent.\n");
+            is_error = true;
+        }
+        else if (sscanf(argv[i], "%d:%d", &tmp_type, &tmp_count) != 2 || tmp_type < 0 ||
+                 tmp_count < 0 || tmp_type > VESSEL_TYPE_COUNT || tmp_count > USHRT_MAX)
+        {
+            perror("Invalid vessel type or vessels number\n");
+            is_error = true;
+        }
+
+        if (is_error)
+        {
+            darr_destroy(t1_parsed);
+            darr_destroy(t2_parsed);
+            return false;
+        }
+
+        vessel_raw_s *raw_vessel = malloc(sizeof(vessel_raw_s));
+
+        if (raw_vessel == NULL)
+        {
+            darr_destroy(t1_parsed);
+            darr_destroy(t2_parsed);
+            malloc_failure_guard(raw_vessel, 0);
+            return false;
+        }
+
+        type = (vessel_type_e)tmp_type;
+        count = (uint16_t)tmp_count;
+        raw_vessel = init_vessel_raw(type, count);
+
+        darr_append(team_count == 1 ? t1_parsed : t2_parsed, raw_vessel);
+    }
+    return true;
+}
+
+bool init_fleet(darr_s *raw, darr_s *fleet)
+{
+    for (size_t i = 0; i < raw->size; i++)
+    {
+        vessel_raw_s *r = raw->data[i];
+        for (size_t j = 0; j < r->count; j++)
+        {
+            vessel_s *vessel = init_vessel(r->type);
+            vessel_state_s *vstate = init_vessel_state(vessel);
+            if (vessel == NULL || vstate == NULL)
+            {
+                return false;
+            }
+            darr_append(fleet, vstate);
+        }
+    }
+
+    return true;
 }

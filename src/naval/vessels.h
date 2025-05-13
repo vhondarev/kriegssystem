@@ -1,6 +1,7 @@
 #ifndef KS_VESSELS__H
 #define KS_VESSELS__H
 
+#include <dynamic_array.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -57,5 +58,9 @@ vessel_raw_s *init_vessel_raw(vessel_type_e type, uint16_t count);
 vessel_s *init_vessel(vessel_type_e type);
 
 vessel_state_s *init_vessel_state(vessel_s *d);
+
+bool vessel_parse_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_parsed);
+
+bool init_fleet(darr_s *raw, darr_s *fleet);
 
 #endif
