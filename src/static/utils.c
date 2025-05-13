@@ -2,7 +2,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-void malloc_failure_guard(void *p, uint8_t argc, ...)
+void *malloc_failure_guard(void *p, uint8_t argc, ...)
 {
     if (p == NULL)
     {
@@ -17,6 +17,7 @@ void malloc_failure_guard(void *p, uint8_t argc, ...)
             va_end(args);
         }
         perror("Memory allocation failed.");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
+    return p;
 }

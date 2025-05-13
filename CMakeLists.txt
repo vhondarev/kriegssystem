@@ -16,6 +16,10 @@ add_library(static STATIC
 )
 target_include_directories(static PUBLIC ${CMAKE_SOURCE_DIR}/src/static)
 
+set_target_properties(static PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build
+)
+
 # add_executable(ground src/ground-engine.c)
 #
 # target_link_libraries(ground PRIVATE

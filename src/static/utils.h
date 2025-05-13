@@ -4,6 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void malloc_failure_guard(void *p, uint8_t argc, ...);
+void *malloc_failure_guard(void *p, uint8_t argc, ...);
 
 #endif

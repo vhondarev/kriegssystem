@@ -6,7 +6,8 @@ uint16_t vessel_count = 0;
 vessel_raw_s *init_vessel_raw(vessel_type_e type, uint16_t count)
 {
     vessel_raw_s *v = malloc(sizeof(vessel_raw_s));
-    malloc_failure_guard(v, 0);
+    if (malloc_failure_guard(v, 0) == NULL)
+        return v;
 
     v->type = type;
     v->count = count;
@@ -17,8 +18,8 @@ vessel_raw_s *init_vessel_raw(vessel_type_e type, uint16_t count)
 vessel_s *init_vessel(vessel_type_e type)
 {
     vessel_s *v = malloc(sizeof(vessel_s));
-
-    malloc_failure_guard(v, 0);
+    if (malloc_failure_guard(v, 0) == NULL)
+        return v;
 
     switch (type)
     {
@@ -61,7 +62,7 @@ vessel_s *init_vessel(vessel_type_e type)
     }
 
     perror("Wrong vessel type.");
-    exit(EXIT_FAILURE);
+    return NULL;
 }
 
 vessel_state_s *init_vessel_state(vessel_s *d)
@@ -69,17 +70,18 @@ vessel_state_s *init_vessel_state(vessel_s *d)
     if (d == NULL)
     {
         perror("Initialize vessel stait failed because of NULL data.");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
 
     vessel_state_s *vs = malloc(sizeof(vessel_state_s));
-    malloc_failure_guard(vs, 0);
+    if (malloc_failure_guard(vs, 0) == NULL)
+        return vs;
 
     if (vessel_count == USHRT_MAX)
     {
         free(vs);
         perror("Reached maximum vessel count.");
-        exit(EXIT_FAILURE);
+        return NULL;
     }
 
     vs->data = d;

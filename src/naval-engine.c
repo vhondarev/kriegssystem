@@ -7,7 +7,6 @@
 
 int main(int argc, char *argv[])
 {
-    printf("ARGS: %d\n", argc);
     if (argc < 2)
     {
         printf("Invalid arguments\n");
@@ -15,6 +14,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    bool is_error = false;
     uint8_t team_count = 0;
     int tmp_type = 0;
     int tmp_count = 0;
@@ -22,9 +22,16 @@ int main(int argc, char *argv[])
     uint16_t count;
 
     darr_s *team1 = darr_create();
-    malloc_failure_guard(team1, 0);
+    if (malloc_failure_guard(team1, 0) == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
+
     darr_s *team2 = darr_create();
-    malloc_failure_guard(team2, 1, team1);
+    if (malloc_failure_guard(team2, 1, team1) == NULL)
+    {
+        exit(EXIT_FAILURE);
+    }
 
     for (int i = 1; i < argc; i++)
     {
@@ -36,18 +43,24 @@ int main(int argc, char *argv[])
         else if (team_count > 2)
         {
             perror("Too many teams\n");
-            exit(EXIT_FAILURE);
+            is_error = true;
         }
         else if (team_count == 0)
         {
             perror("Team settler argument absent.\n");
-            exit(EXIT_FAILURE);
+            is_error = true;
         }
-        if (sscanf(argv[i], "%d:%d", &tmp_type, &tmp_count) != 2 || tmp_type < 0 || tmp_count < 0 ||
-            tmp_type > VESSEL_TYPE_COUNT || tmp_count > USHRT_MAX)
+        else if (sscanf(argv[i], "%d:%d", &tmp_type, &tmp_count) != 2 || tmp_type < 0 ||
+                 tmp_count < 0 || tmp_type > VESSEL_TYPE_COUNT || tmp_count > USHRT_MAX)
         {
-            printf("type: %d, count: %d", tmp_type, tmp_count);
             perror("Invalid vessel type or vessels number\n");
+            is_error = true;
+        }
+
+        if (is_error)
+        {
+            darr_destroy(team1);
+            darr_destroy(team2);
             exit(EXIT_FAILURE);
         }
 
@@ -58,6 +71,7 @@ int main(int argc, char *argv[])
             darr_destroy(team1);
             darr_destroy(team2);
             malloc_failure_guard(raw_vessel, 0);
+            exit(EXIT_FAILURE);
         }
 
         type = (vessel_type_e)tmp_type;
@@ -65,20 +79,6 @@ int main(int argc, char *argv[])
         raw_vessel = init_vessel_raw(type, count);
 
         darr_append(team_count == 1 ? team1 : team2, raw_vessel);
-    }
-
-    printf("t1size: %zu, t2size: %zu\n", team1->size, team2->size);
-
-    for (size_t i = 0; i < team1->size; i++)
-    {
-        printf("vessel_type: %d\t vessel_count: %d\n", ((vessel_raw_s *)team1->data[i])->type,
-               ((vessel_raw_s *)team1->data[i])->count);
-    }
-    printf("==========\n");
-    for (size_t i = 0; i < team2->size; i++)
-    {
-        printf("vessel_type: %d\t vessel_count: %d\n", ((vessel_raw_s *)team2->data[i])->type,
-               ((vessel_raw_s *)team2->data[i])->count);
     }
 
     darr_destroy(team1);
