@@ -1,3 +1,3 @@
+#!/usr/bin/env bash
 cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON .
 cmake --build .
-./bin/naval team 0:10 1:5 team 0:10

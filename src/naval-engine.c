@@ -1,7 +1,10 @@
+#include "naval/combat.h"
 #include "naval/vessels.h"
 #include <dynamic_array.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 int main(int argc, char *argv[])
 {
@@ -9,8 +12,12 @@ int main(int argc, char *argv[])
     {
         printf("Invalid arguments\n");
         printf("./naval-engine team [t]:[n] ... team [t]:[n]...\n");
-        exit(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
+
+    srand(time(NULL));
+    clock_t time_start, time_end;
+    time_start = clock();
 
     darr_s *t1_raw = darr_create(), *t2_raw = darr_create(), *t1_fleet = darr_create(),
            *t2_fleet = darr_create();
@@ -20,7 +27,7 @@ int main(int argc, char *argv[])
         goto error_cleanup;
     }
 
-    if (!vessel_parse_raw(argc, argv, t1_raw, t2_raw))
+    if (!parse_vessel_raw(argc, argv, t1_raw, t2_raw))
     {
         goto error_cleanup;
     }
@@ -35,13 +42,16 @@ int main(int argc, char *argv[])
         goto error_cleanup;
     }
 
-    // Combat simuation
-    // TODO
+    simulate_battle(t1_raw, t1_fleet, t2_raw, t2_fleet);
 
     darr_destroy(t1_raw);
     darr_destroy(t2_raw);
     darr_destroy(t1_fleet);
     darr_destroy(t2_fleet);
+
+    time_end = clock();
+    double cpu_time_used = ((double)(time_end - time_start)) / CLOCKS_PER_SEC;
+    printf("Execution time: %f seconds\n", cpu_time_used);
 
     return EXIT_SUCCESS;
 

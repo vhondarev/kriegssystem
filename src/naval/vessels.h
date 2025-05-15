@@ -25,7 +25,8 @@ typedef struct
 {
     vessel_type_e type;
     uint16_t hull;
-    uint16_t rigging;
+    uint16_t hull_armour;
+    // uint16_t rigging;
     uint16_t speed;
     uint16_t manoeuvre;
     uint16_t crew;
@@ -43,14 +44,12 @@ typedef struct
 typedef struct
 {
     vessel_s *data;
-    uint16_t id;
-    uint16_t lock_target;
-    uint16_t locked_by;
     uint8_t on_fire_round;
     bool on_fire;
     bool shocked;
-    bool disabled;
-    bool run_away;
+    bool boarded;
+    bool running;
+    bool destroyed;
 } vessel_state_s;
 
 vessel_raw_s *init_vessel_raw(vessel_type_e type, uint16_t count);
@@ -59,7 +58,7 @@ vessel_s *init_vessel(vessel_type_e type);
 
 vessel_state_s *init_vessel_state(vessel_s *d);
 
-bool vessel_parse_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_parsed);
+bool parse_vessel_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_parsed);
 
 bool init_fleet(darr_s *raw, darr_s *fleet);
 

@@ -21,6 +21,8 @@ set_target_properties(static PROPERTIES
 
 add_library(naval_lib STATIC
     src/naval/vessels.c
+    src/naval/combat.c
+    src/naval/prototypes.c
 )
 target_include_directories(naval_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/src/naval
