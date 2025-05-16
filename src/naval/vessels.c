@@ -58,7 +58,7 @@ vessel_state_s *init_vessel_state(vessel_s *d)
     vs->data = d;
     vs->on_fire_round = 0;
     vs->on_fire = false;
-    vs->boarded = false;
+    vs->boarded_count = 0;
     vs->shocked = false;
     vs->running = false;
 

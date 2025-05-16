@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAX_BOARDED_COUNT 2
+
 extern uint16_t vessel_count;
 
 typedef enum
@@ -30,6 +32,7 @@ typedef struct
     uint16_t speed;
     uint16_t manoeuvre;
     uint16_t crew;
+    uint16_t crew_max;
     uint16_t crew_dmg;
     uint16_t crew_def;
     uint16_t volleys;
@@ -44,10 +47,10 @@ typedef struct
 typedef struct
 {
     vessel_s *data;
+    uint8_t boarded_count;
     uint8_t on_fire_round;
     bool on_fire;
     bool shocked;
-    bool boarded;
     bool running;
     bool destroyed;
 } vessel_state_s;
