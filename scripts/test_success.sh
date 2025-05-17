@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-./build.sh
+./scripts/build.sh
 
 ./bin/naval team 0:1 team 0:1
 

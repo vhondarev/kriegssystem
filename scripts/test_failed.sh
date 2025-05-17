@@ -4,7 +4,7 @@
 # EVERY RUN SHOULD FAIL AND PRINT AN ERROR
 #
 
-./build.sh
+./scripts/build.sh
 
 # Invalid team argument
 ./bin/naval x 0:10 team 0:5

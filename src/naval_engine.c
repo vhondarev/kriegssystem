@@ -18,8 +18,11 @@ int main(int argc, char *argv[])
 
     srand(time(NULL));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
     clock_t time_start, time_end;
     time_start = clock();
+#pragma GCC diagnostic pop
 
     darr_s *t1_raw = darr_create(), *t2_raw = darr_create(), *t1_fleet = darr_create(),
            *t2_fleet = darr_create();
@@ -52,8 +55,7 @@ int main(int argc, char *argv[])
     darr_destroy(t2_fleet);
 
     time_end = clock();
-    double cpu_time_used = ((double)(time_end - time_start)) / CLOCKS_PER_SEC;
-    PRINT("Execution time: %f seconds\n", cpu_time_used);
+    PRINT("Execution time: %f seconds\n", (((double)(time_end - time_start)) / CLOCKS_PER_SEC));
 
     return EXIT_SUCCESS;
 
