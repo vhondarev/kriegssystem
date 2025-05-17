@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+./build.sh
+
+./bin/naval team 0:1 team 0:1
+
+./bin/naval team 0:65535 team 0:65535

@@ -1,4 +1,5 @@
 #include "combat.h"
+#include "../static/messages.h"
 #include "vessels.h"
 #include <dynamic_array.h>
 #include <stdint.h>
@@ -9,24 +10,16 @@
 
 // TODO
 // improve reporting and add details
-// cover reporting under dubug flag
 // implement missed features
-void simulate_battle(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
+void simulate_combat(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
 {
     uint8_t round = 0;
-
-    printf("\n=== BATTLE START ===\n");
 
     while (fl1->size != 0 && fl2->size != 0 && round < ROUND_CAP)
     {
         round++;
 
-        printf("\n--- Round %d ---\n", round);
-
-        printf("Phase: Long-range combat\n");
         process_shooting(fl1, fl2);
-
-        printf("Phase: Resolve casualties\n");
         process_casualties(fl1, fl2);
 
         if (fl1->size == 0 || fl2->size == 0)
@@ -34,10 +27,7 @@ void simulate_battle(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
 
         if (round > 1)
         {
-            printf("Phase: Boarding actions\n");
             process_boarding(fl1, fl2);
-
-            printf("Phase: Resolve casualties\n");
             process_casualties(fl1, fl2);
         }
 
@@ -56,6 +46,7 @@ void simulate_battle(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
 
 void process_shooting(darr_s *fl1, darr_s *fl2)
 {
+    PRINT("Phase: Long-range combat\n");
     if (fl1 == NULL || fl2 == NULL)
         return;
 
@@ -68,6 +59,7 @@ void process_shooting(darr_s *fl1, darr_s *fl2)
 
 void process_casualties(darr_s *fl1, darr_s *fl2)
 {
+    PRINT("Phase: Resolve casualties\n");
     if (fl1 == NULL || fl2 == NULL)
         return;
 
@@ -93,6 +85,7 @@ void process_casualties(darr_s *fl1, darr_s *fl2)
 
 void process_boarding(darr_s *fl1, darr_s *fl2)
 {
+    PRINT("Phase: Boarding actions\n");
     uint16_t max_size = fl1->size > fl2->size ? fl1->size : fl2->size;
     // TODO better approach for boarding order - sort by speed first
     // For now, alternating between fleets for fairness
@@ -107,23 +100,27 @@ void process_boarding(darr_s *fl1, darr_s *fl2)
 
 void round_report(uint8_t round, darr_s *fl1, darr_s *fl2)
 {
-    printf("End of round %d status:\n", round);
-    printf("Fleet 1: %zu vessels remaining\n", fl1->size);
-    printf("Fleet 2: %zu vessels remaining\n", fl2->size);
+#ifdef DEBUG
+    PRINT("\nEnd of round %d status:\n", round);
+    PRINT("Fleet 1: %zu vessels remaining\n", fl1->size);
+    PRINT("Fleet 2: %zu vessels remaining\n", fl2->size);
+#endif
 }
 
 void battle_report(uint8_t round, darr_s *fl1, darr_s *fl2)
 {
-    printf("\n--- Battle ended in %i ---\n", round);
+#ifdef DEBUG
+    PRINT("\n--- Battle ended in %i ---\n", round);
 
     if (fl1->size > 0 && fl2->size == 0)
-        printf("Fleet 1 is victorious!\n");
+        PRINT("Fleet 1 is victorious!\n");
     else if (fl2->size > 0 && fl1->size == 0)
-        printf("Fleet 2 is victorious!\n");
+        PRINT("Fleet 2 is victorious!\n");
     else if (fl1->size > 0 && fl2->size > 0)
-        printf("Battle ended in stalemate. Both fleets still have vessels.\n");
+        PRINT("Battle ended in stalemate. Both fleets still have vessels.\n");
     else
-        printf("Mutual destruction! Both fleets have been eliminated.\n");
+        PRINT("Mutual destruction! Both fleets have been eliminated.\n");
+#endif
 }
 
 void shooting(vessel_state_s *vessel_state, darr_s *enemy_fleet)

@@ -1,5 +1,6 @@
 #include "naval/combat.h"
 #include "naval/vessels.h"
+#include "static/messages.h"
 #include <dynamic_array.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,6 +17,7 @@ int main(int argc, char *argv[])
     }
 
     srand(time(NULL));
+
     clock_t time_start, time_end;
     time_start = clock();
 
@@ -42,7 +44,7 @@ int main(int argc, char *argv[])
         goto error_cleanup;
     }
 
-    simulate_battle(t1_raw, t1_fleet, t2_raw, t2_fleet);
+    simulate_combat(t1_raw, t1_fleet, t2_raw, t2_fleet);
 
     darr_destroy(t1_raw);
     darr_destroy(t2_raw);
@@ -51,7 +53,7 @@ int main(int argc, char *argv[])
 
     time_end = clock();
     double cpu_time_used = ((double)(time_end - time_start)) / CLOCKS_PER_SEC;
-    printf("Execution time: %f seconds\n", cpu_time_used);
+    PRINT("Execution time: %f seconds\n", cpu_time_used);
 
     return EXIT_SUCCESS;
 

@@ -1,6 +1,12 @@
 #ifndef KS_MESSAGES_H
 #define KS_MESSAGES_H
 
+#ifdef DEBUG
+#define PRINT(...) printf(__VA_ARGS__)
+#else
+#define PRINT(...) ((void)0)
+#endif
+
 #define MSG_ERR_MEMORY_FAIL "Memory allocation failed"
 
 #define MSG_ERR_PARSE_LIMIT "Too many teams"
