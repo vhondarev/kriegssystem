@@ -1,4 +1,18 @@
 #include "prototypes.h"
+#include "vessels.h"
+
+char *get_prototype_name(vessel_type_e type)
+{
+    switch (type)
+    {
+    case VESSEL_LONGHSIP:
+        return "Longship";
+    case VESSEL_GALLEY:
+        return "Galley";
+    default:
+        return "Unknown";
+    }
+}
 
 bool apply_prototype(vessel_type_e type, vessel_s *v)
 {
@@ -19,7 +33,8 @@ bool apply_prototype(vessel_type_e type, vessel_s *v)
         v->volley_momentum = 0;
         v->projectile_dmg = 1;
         v->accuracy = 40;
-        v->collision_dmg = 20;
+        v->collision_dmg = 25;
+        v->collision_def = 10;
         v->boarding_momentum = 25;
         v->boarding = true;
         break;
@@ -38,7 +53,8 @@ bool apply_prototype(vessel_type_e type, vessel_s *v)
         v->volley_momentum = 10;
         v->projectile_dmg = 1;
         v->accuracy = 40;
-        v->collision_dmg = 10;
+        v->collision_dmg = 15;
+        v->collision_def = 5;
         v->boarding_momentum = 10;
         v->boarding = true;
         break;

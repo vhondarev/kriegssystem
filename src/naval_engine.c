@@ -11,8 +11,8 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        printf("Invalid arguments\n");
-        printf("./naval-engine team [t]:[n] ... team [t]:[n]...\n");
+        printf(MSG_INVALID_ARGUMENTS);
+        printf(MSG_EXE_HINT);
         return EXIT_FAILURE;
     }
 
@@ -55,7 +55,8 @@ int main(int argc, char *argv[])
     darr_destroy(t2_fleet);
 
     time_end = clock();
-    PRINT("Execution time: %f seconds\n", (((double)(time_end - time_start)) / CLOCKS_PER_SEC));
+    printf(MSG_EXE_TIME_REPORT, (((double)(time_end - time_start)) / CLOCKS_PER_SEC));
+    // PRINT(MSG_EXE_TIME_REPORT, (((double)(time_end - time_start)) / CLOCKS_PER_SEC));
 
     return EXIT_SUCCESS;
 

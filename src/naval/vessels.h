@@ -40,6 +40,7 @@ typedef struct
     uint16_t projectile_dmg;
     uint16_t accuracy;
     uint16_t collision_dmg;
+    uint16_t collision_def;
     uint16_t boarding_momentum;
     bool boarding;
 } vessel_s;

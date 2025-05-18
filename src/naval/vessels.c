@@ -3,8 +3,11 @@
 #include "../static/utils.h"
 #include "prototypes.h"
 #include "stdio.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define TEAM_SETTLER "team"
 
 uint16_t vessel_count = 0;
 
@@ -76,7 +79,7 @@ bool parse_vessel_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_pars
 
     for (int i = 1; i < argc; i++)
     {
-        if (strcmp(argv[i], "team") == 0)
+        if (strcmp(argv[i], TEAM_SETTLER) == 0)
         {
             team_count++;
             continue;
@@ -126,10 +129,17 @@ bool init_fleet(darr_s *raw, darr_s *fleet)
             vessel_state_s *vstate = init_vessel_state(vessel);
             if (vessel == NULL || vstate == NULL)
             {
+                perror(MSG_ERR_FLEET_INIT);
                 return false;
             }
             darr_append(fleet, vstate);
         }
+    }
+
+    if (fleet->size == 0)
+    {
+        perror(MSG_ERR_FLEET_EMPTY);
+        return false;
     }
 
     return true;
