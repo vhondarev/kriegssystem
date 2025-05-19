@@ -27,6 +27,7 @@ typedef struct
 {
     vessel_type_e type;
     uint16_t hull;
+    uint16_t hull_max;
     uint16_t hull_armour;
     // uint16_t rigging;
     uint16_t speed;
@@ -48,6 +49,8 @@ typedef struct
 typedef struct
 {
     vessel_s *data;
+    uint16_t delayed_hull_dmg;
+    uint16_t delayed_crew_dmg;
     uint8_t boarded_count;
     uint8_t on_fire_round;
     bool on_fire;

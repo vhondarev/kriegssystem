@@ -1,15 +1,22 @@
 #include "combat.h"
 #include "../static/messages.h"
+#include "prototypes.h"
 #include "vessels.h"
 #include <dynamic_array.h>
+#include <math.h>
 #include <stdint.h>
 #include <stdio.h>
 
 #define ROUND_CAP 10
 #define MAX_BOARDING_ATTEMPT 3
+#define CREW_FATALITY_RATE 0.4
+#define CREW_SURRENDER_CAP 0.2
 
 void simulate_combat(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
 {
+    if (fl1 == NULL || fl1->data == NULL || fl2 == NULL || fl2->data == NULL)
+        return;
+
     uint8_t round = 0;
 
     while (fl1->size != 0 && fl2->size != 0 && round < ROUND_CAP)
@@ -44,7 +51,11 @@ void simulate_combat(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
 
 void process_shooting(darr_s *fl1, darr_s *fl2)
 {
+    if (fl1 == NULL || fl1->data == NULL || fl2 == NULL || fl2->data == NULL)
+        return;
+
     PRINT(MSG_PHASE_SHOOTING);
+
     if (fl1 == NULL || fl2 == NULL)
         return;
 
@@ -59,20 +70,27 @@ void process_shooting(darr_s *fl1, darr_s *fl2)
 
 void process_casualties(darr_s *fl1, darr_s *fl2)
 {
+    if (fl1 == NULL || fl1->data == NULL || fl2 == NULL || fl2->data == NULL)
+        return;
+
     PRINT(MSG_PHASE_CASUALTIES);
     if (fl1 == NULL || fl2 == NULL)
         return;
 
     PRINT(MSG_CURRENT_TURN, MSG_ATTACKER);
-    resolve_fleet_casualties(fl1);
+    resolve_fleet_status(fl1);
 
     PRINT(MSG_CURRENT_TURN, MSG_DEFENDER);
-    resolve_fleet_casualties(fl2);
+    resolve_fleet_status(fl2);
 }
 
 void process_boarding(darr_s *fl1, darr_s *fl2)
 {
+    if (fl1 == NULL || fl1->data == NULL || fl2 == NULL || fl2->data == NULL)
+        return;
+
     PRINT(MSG_PHASE_BOARDING);
+
     uint16_t max_size = fl1->size > fl2->size ? fl1->size : fl2->size;
     // TODO better approach for boarding order - sort by speed first
     // For now, alternating between fleets for fairness
@@ -90,7 +108,7 @@ void process_round_end(uint8_t round, darr_s *fl1, darr_s *fl2)
 #ifdef DEBUG
     PRINT(MSG_END_ROUND_INFO, round);
     PRINT(MSG_LEFT_VESSELS, MSG_ATTACKER, fl1->size);
-    PRINT(MSG_LEFT_VESSELS, MSG_ATTACKER, fl2->size);
+    PRINT(MSG_LEFT_VESSELS, MSG_DEFENDER, fl2->size);
 #endif
 }
 
@@ -110,14 +128,16 @@ void process_battle_end(uint8_t round, darr_s *fl1, darr_s *fl2)
 #endif
 }
 
-void shooting(vessel_state_s *vessel_state, darr_s *enemy_fleet)
+void shooting(vessel_state_s *vs, darr_s *enemy_fleet)
 {
 #ifdef DEBUG
     getchar();
 #endif
 
-    if (vessel_state == NULL || enemy_fleet == NULL || enemy_fleet->size == 0)
+    if (vs == NULL || enemy_fleet == NULL || enemy_fleet->size == 0)
         return;
+
+    vs->boarded_count = 0;
 
     // Status effects checks
     // if (vessel_state->shocked || vessel_state->running)
@@ -126,63 +146,87 @@ void shooting(vessel_state_s *vessel_state, darr_s *enemy_fleet)
     // TODO implement advanced targeting strategy
     vessel_state_s *target_state = enemy_fleet->data[rand() % enemy_fleet->size];
 
-    PRINT(MSG_TARGETING_RESULT, get_prototype_name(vessel_state->data->type),
+    PRINT(MSG_TARGETING_RESULT, get_prototype_name(vs->data->type),
           get_prototype_name(target_state->data->type));
 
     if (target_state->data->hull == 0)
         return;
 
     bool hit = false;
+    uint16_t available_volleys = calc_available_volleys(vs->data);
     uint16_t total_hits = 0;
     uint16_t total_dmg = 0;
 
-    // TODO crit, shoke, burn, damage crew
-    for (uint16_t i = 0; i <= vessel_state->data->volleys - 1; i++)
+    // TODO crit, shoke, burn
+    for (uint16_t i = 0; i <= available_volleys - 1; i++)
     {
         if (target_state->data->hull == 0)
             return;
 
-        hit = ((rand() % 100) + vessel_state->data->accuracy + vessel_state->data->speed -
-               target_state->data->manoeuvre - target_state->data->speed) > 100;
+        hit = ((rand() % 100) + vs->data->accuracy + calc_vessel_speed(vs->data) -
+               target_state->data->manoeuvre - calc_vessel_speed(target_state->data)) > 100;
 
         if (hit)
         {
             total_hits++;
-            total_dmg += vessel_state->data->projectile_dmg > target_state->data->hull_armour
-                             ? vessel_state->data->projectile_dmg - target_state->data->hull_armour
-                             : 1;
+            total_dmg +=
+                vs->data->projectile_dmg > target_state->data->hull_armour
+                    ? (rand() % (vs->data->projectile_dmg - target_state->data->hull_armour + 1))
+                    : 1;
         }
     }
 
-    if (target_state->data->hull <= total_dmg)
-    {
-        target_state->destroyed = true;
-        target_state->data->hull = 0;
-    }
-    else
-    {
-        target_state->data->hull -= total_dmg;
-    }
+    total_dmg = max_dmg(target_state->data->hull, total_dmg);
+    uint16_t crew_losses = calc_crew_losses(target_state, total_dmg);
 
-    PRINT(MSG_SHOOTING_REPORT, vessel_state->data->volleys, total_hits, total_dmg);
-    PRINT(MSG_VESSEL_STATUS, MSG_DEFENDER, target_state->data->hull, target_state->data->crew);
+    PRINT(MSG_SHOOTING_REPORT, vs->data->volleys, total_hits, total_dmg);
+    PRINT(MSG_HULL_DMG_REPORT, MSG_DEFENDER, total_dmg, target_state->data->hull,
+          target_state->data->hull - total_dmg);
+    PRINT(MSG_CREW_SUFFER_REPORT, MSG_DEFENDER, crew_losses, target_state->data->crew,
+          target_state->data->crew - crew_losses);
+
+    target_state->delayed_hull_dmg = total_dmg;
+    target_state->delayed_crew_dmg = crew_losses;
 }
 
-void resolve_fleet_casualties(darr_s *fl)
+uint16_t calc_available_volleys(vessel_s *v)
 {
+    uint16_t crew_capacity = ((float)v->crew / v->crew_max) * v->volleys;
+    uint16_t hull_capacity = ((float)v->hull / v->hull_max) * v->volleys;
+    return crew_capacity > hull_capacity ? hull_capacity : crew_capacity;
+}
+
+void resolve_fleet_status(darr_s *fl)
+{
+    if (fl == NULL || fl->data == NULL)
+        return;
+
     uint16_t i = 0;
     vessel_state_s *vs;
 
     while (i < fl->size)
     {
         vs = fl->data[i];
+        if (vs->delayed_hull_dmg > 0)
+        {
+            vs->data->hull = vs->data->hull - vs->delayed_hull_dmg;
+            vs->delayed_hull_dmg = 0;
+        }
+
         if (vs->destroyed)
         {
             PRINT(MSG_VESSEL_SUNKED, get_prototype_name(vs->data->type));
             destroy_vessel(fl, i);
         }
         else
+        {
             i++;
+            if (vs->delayed_crew_dmg > 0)
+            {
+                vs->data->crew = vs->data->crew - vs->delayed_crew_dmg;
+                vs->delayed_crew_dmg = 0;
+            }
+        }
     }
 }
 
@@ -196,41 +240,41 @@ void destroy_vessel(darr_s *fl, uint16_t index)
     darr_remove_at(fl, index);
 }
 
-void boarding(vessel_state_s *vessel_state, darr_s *enemy_fleet)
+void boarding(vessel_state_s *vs, darr_s *enemy_fleet)
 {
 #ifdef DEBUG
     getchar();
 #endif
 
-    if (vessel_state == NULL || enemy_fleet == NULL)
+    if (vs == NULL || vs->data == NULL || enemy_fleet == NULL || enemy_fleet->data == NULL)
         return;
 
     PRINT(MSG_BOARDING_TRY);
 
-    if (vessel_state->boarded_count == 0 && vessel_state->data->boarding && enemy_fleet->size > 0)
+    if (vs->boarded_count == 0 && vs->data->boarding && enemy_fleet->size > 0)
     {
         vessel_state_s *target_state = find_boarding_target(enemy_fleet);
         if (target_state == NULL)
             return;
 
-        PRINT(MSG_TARGETING_RESULT, get_prototype_name(vessel_state->data->type),
+        PRINT(MSG_TARGETING_RESULT, get_prototype_name(vs->data->type),
               get_prototype_name(target_state->data->type));
 
-        // TODO consider crew damage debuffs
-        bool hit = ((vessel_state->data->speed + vessel_state->data->manoeuvre) *
-                        (1.0 + (vessel_state->data->boarding_momentum / 100.0)) >
-                    target_state->data->speed - target_state->data->manoeuvre);
+        bool hit = ((calc_vessel_speed(vs->data) + vs->data->manoeuvre) *
+                        (1.0 + (vs->data->boarding_momentum / 100.0)) >
+                    calc_vessel_speed(target_state->data) - target_state->data->manoeuvre);
 
         if (hit)
         {
-            vessel_state->boarded_count++;
+            vs->boarded_count++;
             target_state->boarded_count++;
 
-            resolve_collision_damage(vessel_state, target_state);
-            if (vessel_state->destroyed || target_state->destroyed)
+            resolve_collision_damage(vs, target_state);
+
+            if (vs->destroyed || target_state->destroyed)
                 return;
 
-            resolve_crew_fight(vessel_state, target_state);
+            resolve_crew_fight(vs, target_state);
         }
     }
 }
@@ -255,25 +299,29 @@ vessel_state_s *find_boarding_target(darr_s *fl)
 
 void resolve_collision_damage(vessel_state_s *vs1, vessel_state_s *vs2)
 {
+    if (vs1 == NULL || vs1->data == NULL || vs2 == NULL || vs2->data == NULL)
+        return;
+
     vessel_s *v1 = vs1->data;
     vessel_s *v2 = vs2->data;
-    // TODO collision damage should not be greater than opponent hull
-    // dmg crew on collision
-    // add speed difference to a damage
-    uint16_t v1_hull_dmg =
-        calc_collision_damage(v1->hull, calc_armor_reduction(v2->collision_dmg, v1->collision_def));
-    uint16_t v1_hull_res = v1->hull - v1_hull_dmg;
 
-    uint16_t v2_hull_dmg =
-        calc_collision_damage(v2->hull, calc_armor_reduction(v1->collision_dmg, v2->collision_def));
-    uint16_t v2_hull_res = v2->hull - v2_hull_dmg;
+    uint16_t v1_take_dmg = max_dmg(v1->hull, calc_collision_dmg(v2, v1));
+    uint16_t v2_take_dmg = max_dmg(v2->hull, calc_collision_dmg(v1, v2));
+    uint16_t v1_crew_losses = calc_crew_losses(vs1, v1_take_dmg);
+    uint16_t v2_crew_losses = calc_crew_losses(vs2, v2_take_dmg);
 
     PRINT(MSG_VESSELS_COLLISION);
-    PRINT(MSG_COLLISION_REPORT, MSG_ATTACKER, v1_hull_dmg, v1->hull, v1_hull_res);
-    PRINT(MSG_COLLISION_REPORT, MSG_DEFENDER, v2_hull_dmg, v2->hull, v2_hull_res);
+    PRINT(MSG_HULL_DMG_REPORT, MSG_ATTACKER, v1_take_dmg, v1->hull, v1->hull - v1_take_dmg);
+    PRINT(MSG_CREW_SUFFER_REPORT, MSG_ATTACKER, v1_crew_losses, v1->crew,
+          v1->crew - v1_crew_losses);
+    PRINT(MSG_HULL_DMG_REPORT, MSG_DEFENDER, v2_take_dmg, v2->hull, v2->hull - v2_take_dmg);
+    PRINT(MSG_CREW_SUFFER_REPORT, MSG_DEFENDER, v2_crew_losses, v2->crew,
+          v2->crew - v2_crew_losses);
 
-    v1->hull = v1_hull_res;
-    v2->hull = v2_hull_res;
+    v1->hull = v1->hull - v1_take_dmg;
+    v2->hull = v2->hull - v2_take_dmg;
+    v1->crew = v1->crew - v1_crew_losses;
+    v2->crew = v2->crew - v2_crew_losses;
 
     if (v1->hull == 0)
     {
@@ -286,50 +334,67 @@ void resolve_collision_damage(vessel_state_s *vs1, vessel_state_s *vs2)
         PRINT(MSG_VESSEL_SUNKED, MSG_DEFENDER);
     }
 }
-
-uint16_t calc_armor_reduction(uint16_t dmg, uint16_t armor)
+uint16_t calc_collision_dmg(vessel_s *v1, vessel_s *v2)
 {
-    return dmg > armor ? dmg - armor : 0;
+    if (v1 == NULL || v2 == NULL)
+        return 0;
+
+    uint16_t v1_speed = calc_vessel_speed(v1);
+    uint16_t v2_speed = calc_vessel_speed(v2);
+    uint16_t dmg =
+        max_dmg(v1->hull, v1->collision_dmg + (v1_speed > v2_speed ? v1_speed - v2_speed : 0));
+
+    return dmg > v2->collision_def ? dmg - v2->collision_def : (rand() % 2);
 }
 
-uint16_t calc_collision_damage(uint16_t hull, uint16_t dmg)
+uint16_t calc_vessel_speed(vessel_s *v)
 {
-    return hull > dmg ? dmg : hull;
+    if (v == NULL)
+        return 0;
+
+    float reduction_factor = 1.0;
+
+    if (v->crew_max * 0.60 < v->crew)
+        reduction_factor = 0.8;
+    else if (v->crew_max * 0.40 < v->crew)
+        reduction_factor = 0.5;
+
+    return (uint16_t)v->speed * reduction_factor;
+}
+
+uint16_t max_dmg(uint16_t hp, uint16_t dmg)
+{
+    return hp > dmg ? dmg : hp;
 }
 
 void resolve_crew_fight(vessel_state_s *vs1, vessel_state_s *vs2)
 {
+    if (vs1 == NULL || vs2 == NULL || vs1->data == NULL || vs2->data == NULL)
+        return;
+
     vessel_s *v1 = vs1->data;
     vessel_s *v2 = vs2->data;
 
-    uint16_t v1_dmg = calculate_crew_damage(v1, v2);
-    uint16_t v2_dmg = calculate_crew_damage(v2, v1);
-    uint16_t v1_crew_dmg = v2_dmg > v1->crew ? v1->crew : v2_dmg;
-    uint16_t v2_crew_dmg = v1_dmg > v2->crew ? v2->crew : v1_dmg;
+    uint16_t v1_take_dmg = max_dmg(v1->crew, calc_crew_damage(v2, v1));
+    uint16_t v2_take_dmg = max_dmg(v2->crew, calc_crew_damage(v1, v2));
 
     PRINT(MSG_VESSELS_BOARDING_FIGHT);
-    PRINT(MSG_BOARDING_FIGHT_REPORT, MSG_ATTACKER, v1_crew_dmg, v1->crew, v1->crew - v1_crew_dmg);
-    PRINT(MSG_BOARDING_FIGHT_REPORT, MSG_DEFENDER, v2_crew_dmg, v2->crew, v2->crew - v2_crew_dmg);
+    PRINT(MSG_CREW_SUFFER_REPORT, MSG_ATTACKER, v1_take_dmg, v1->crew, v1->crew - v1_take_dmg);
+    PRINT(MSG_CREW_SUFFER_REPORT, MSG_DEFENDER, v2_take_dmg, v2->crew, v2->crew - v2_take_dmg);
 
-    v1->crew = v1->crew - v1_crew_dmg;
-    v2->crew = v2->crew - v2_crew_dmg;
+    v1->crew = v1->crew - v1_take_dmg;
+    v2->crew = v2->crew - v2_take_dmg;
 
     if (check_crew_surrender(vs1))
-    {
         PRINT(MSG_VESSEL_SUNKED, MSG_ATTACKER);
-    }
     if (check_crew_surrender(vs2))
-    {
         PRINT(MSG_VESSEL_SUNKED, MSG_DEFENDER);
-    }
 }
 
-uint16_t calculate_crew_damage(vessel_s *v1, vessel_s *v2)
+uint16_t calc_crew_damage(vessel_s *v1, vessel_s *v2)
 {
     if (v1 == NULL || v2 == NULL)
-    {
         return 0;
-    }
 
     uint16_t total_dmg = 0;
 
@@ -339,12 +404,24 @@ uint16_t calculate_crew_damage(vessel_s *v1, vessel_s *v2)
                                                  : (rand() % 2);
     }
 
-    return total_dmg;
+    return total_dmg * CREW_FATALITY_RATE;
+}
+
+uint16_t calc_crew_losses(vessel_state_s *vs1, uint16_t integrity_dmg)
+{
+    if (vs1 == NULL || vs1->data == NULL || integrity_dmg == 0.0)
+        return 0;
+
+    return roundf(vs1->data->crew * ((float)integrity_dmg / vs1->data->hull) * CREW_FATALITY_RATE);
 }
 
 bool check_crew_surrender(vessel_state_s *v)
 {
-    if (v->data->crew < v->data->crew_max / 100 * 20)
+    if (v == NULL || v->data == NULL)
+    {
+        return false;
+    }
+    else if (v->data->crew < v->data->crew_max * CREW_SURRENDER_CAP)
     {
         v->destroyed = true;
         return true;

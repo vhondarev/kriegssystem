@@ -59,9 +59,11 @@ vessel_state_s *init_vessel_state(vessel_s *d)
     }
 
     vs->data = d;
+    vs->delayed_hull_dmg = 0;
+    vs->delayed_crew_dmg = 0;
+    vs->boarded_count = 0;
     vs->on_fire_round = 0;
     vs->on_fire = false;
-    vs->boarded_count = 0;
     vs->shocked = false;
     vs->running = false;
 

@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
         goto error_cleanup;
     }
 
-    if (!init_fleet(t1_raw, t2_fleet))
+    if (!init_fleet(t2_raw, t2_fleet))
     {
         goto error_cleanup;
     }
