@@ -14,6 +14,12 @@ typedef enum
 {
     VESSEL_LONGHSIP,
     VESSEL_GALLEY,
+    VESSEL_COG,
+    VESSEL_KNARR,
+    VESSEL_CARRACK,
+    VESSEL_CLIPPER,
+    VESSEL_GALLEON,
+    VESSEL_FRIGATE,
     VESSEL_TYPE_COUNT,
 } vessel_type_e;
 
@@ -29,7 +35,7 @@ typedef struct
     uint16_t hull;
     uint16_t hull_max;
     uint16_t hull_armour;
-    // uint16_t rigging;
+    uint16_t cargo;
     uint16_t speed;
     uint16_t manoeuvre;
     uint16_t crew;
@@ -37,7 +43,6 @@ typedef struct
     uint16_t crew_dmg;
     uint16_t crew_def;
     uint16_t volleys;
-    uint16_t volley_momentum;
     uint16_t projectile_dmg;
     uint16_t accuracy;
     uint16_t collision_dmg;
