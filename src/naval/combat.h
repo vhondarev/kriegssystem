@@ -5,7 +5,7 @@
 #include "vessels.h"
 #include <stdint.h>
 
-void simulate_combat(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2);
+void simulate_combat(darr_s *fl1, darr_s *fl2, darr_s *t1_raw, darr_s *t2_raw);
 
 void process_shooting(darr_s *fl1, darr_s *fl2);
 
@@ -15,7 +15,7 @@ void process_boarding(darr_s *fl1, darr_s *fl2);
 
 void process_round_end(uint8_t r, darr_s *fl1, darr_s *fl2);
 
-void process_battle_end(uint8_t r, darr_s *fl1, darr_s *fl2);
+void process_battle_end(uint8_t r, darr_s *fl1, darr_s *fl2, darr_s *t1_raw, darr_s *t2_raw);
 
 void shooting(vessel_state_s *vs, darr_s *fl);
 

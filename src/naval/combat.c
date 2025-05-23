@@ -6,13 +6,14 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 #define ROUND_CAP 10
 #define MAX_BOARDING_ATTEMPT 3
 #define CREW_FATALITY_RATE 0.4
 #define CREW_SURRENDER_CAP 0.2
 
-void simulate_combat(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
+void simulate_combat(darr_s *fl1, darr_s *fl2, darr_s *t1_end_raw, darr_s *t2_end_raw)
 {
     if (fl1 == NULL || fl1->data == NULL || fl2 == NULL || fl2->data == NULL)
         return;
@@ -43,7 +44,7 @@ void simulate_combat(darr_s *t1_raw, darr_s *fl1, darr_s *t2_raw, darr_s *fl2)
         process_round_end(round, fl1, fl2);
     }
 
-    process_battle_end(round, fl1, fl2);
+    process_battle_end(round, fl1, fl2, t1_end_raw, t2_end_raw);
 
     // Battle phases:
     // 6. Results
@@ -112,7 +113,7 @@ void process_round_end(uint8_t round, darr_s *fl1, darr_s *fl2)
 #endif
 }
 
-void process_battle_end(uint8_t round, darr_s *fl1, darr_s *fl2)
+void process_battle_end(uint8_t round, darr_s *fl1, darr_s *fl2, darr_s *t1_raw, darr_s *t2_raw)
 {
 #ifdef DEBUG
     PRINT(MSG_END_BATTLE_INFO, round);
@@ -126,6 +127,15 @@ void process_battle_end(uint8_t round, darr_s *fl1, darr_s *fl2)
     else
         PRINT(MSG_MUTUAL_DESTRUCTION_RESULT);
 #endif
+    pack_fleet_to_raw(fl1, t1_raw);
+    pack_fleet_to_raw(fl2, t2_raw);
+
+    char result[1024];
+
+    raw_to_str_result(t1_raw, result);
+    raw_to_str_result(t2_raw, result);
+
+    printf("%s\n", result);
 }
 
 void shooting(vessel_state_s *vs, darr_s *enemy_fleet)

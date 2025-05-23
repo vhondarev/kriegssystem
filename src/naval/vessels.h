@@ -72,6 +72,10 @@ vessel_state_s *init_vessel_state(vessel_s *d);
 
 bool parse_vessel_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_parsed);
 
+void pack_fleet_to_raw(darr_s *fl, darr_s *raw);
+
+void raw_to_str_result(darr_s *raw, char *result);
+
 bool init_fleet(darr_s *raw, darr_s *fleet);
 
 #endif

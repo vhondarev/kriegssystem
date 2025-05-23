@@ -1,8 +1,10 @@
 #include "vessels.h"
 #include "../static/messages.h"
 #include "../static/utils.h"
+#include "dynamic_array.h"
 #include "prototypes.h"
 #include "stdio.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -118,6 +120,44 @@ bool parse_vessel_raw(int argc, char *argv[], darr_s *t1_parsed, darr_s *t2_pars
     }
 
     return true;
+}
+
+void pack_fleet_to_raw(darr_s *fl, darr_s *raw)
+{
+    uint16_t t[VESSEL_TYPE_COUNT] = {0};
+
+    for (uint16_t i = 0; i < fl->size; i++)
+    {
+        vessel_type_e type = ((vessel_state_s *)fl->data[i])->data->type;
+        t[type] = t[type] + 1;
+    }
+
+    for (vessel_type_e i = 0; i < VESSEL_TYPE_COUNT; i++)
+    {
+        if (t[i] > 0)
+        {
+            darr_append(raw, init_vessel_raw(i, t[i]));
+        }
+    }
+}
+
+void raw_to_str_result(darr_s *raw, char *result)
+{
+
+    strcat(result, "team ");
+    if (raw->size > 0)
+    {
+        char *tmp[24];
+        for (uint16_t i = 0; i < raw->size; i++)
+        {
+
+            vessel_raw_s *d = raw->data[i];
+            sprintf(tmp, "%d:%d ", d->type, d->count);
+            strcat(result, tmp);
+        }
+    }
+    else
+        strcat(result, "0:0 ");
 }
 
 bool init_fleet(darr_s *raw, darr_s *fleet)

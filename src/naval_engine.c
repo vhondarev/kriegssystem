@@ -24,8 +24,8 @@ int main(int argc, char *argv[])
     time_start = clock();
 #pragma GCC diagnostic pop
 
-    darr_s *t1_raw = darr_create(), *t2_raw = darr_create(), *t1_fleet = darr_create(),
-           *t2_fleet = darr_create();
+    darr_s *t1_raw = darr_create(), *t2_raw = darr_create(), *t1_end_raw = darr_create(),
+           *t2_end_raw = darr_create(), *t1_fleet = darr_create(), *t2_fleet = darr_create();
 
     if (t1_raw == NULL || t2_raw == NULL)
     {
@@ -47,22 +47,25 @@ int main(int argc, char *argv[])
         goto error_cleanup;
     }
 
-    simulate_combat(t1_raw, t1_fleet, t2_raw, t2_fleet);
+    simulate_combat(t1_fleet, t2_fleet, t1_end_raw, t2_end_raw);
 
     darr_destroy(t1_raw);
     darr_destroy(t2_raw);
+    darr_destroy(t1_end_raw);
+    darr_destroy(t2_end_raw);
     darr_destroy(t1_fleet);
     darr_destroy(t2_fleet);
 
     time_end = clock();
     printf(MSG_EXE_TIME_REPORT, (((double)(time_end - time_start)) / CLOCKS_PER_SEC));
     // PRINT(MSG_EXE_TIME_REPORT, (((double)(time_end - time_start)) / CLOCKS_PER_SEC));
-
     return EXIT_SUCCESS;
 
 error_cleanup:
     darr_destroy(t1_raw);
     darr_destroy(t2_raw);
+    darr_destroy(t1_end_raw);
+    darr_destroy(t2_end_raw);
     darr_destroy(t1_fleet);
     darr_destroy(t2_fleet);
     return EXIT_FAILURE;
