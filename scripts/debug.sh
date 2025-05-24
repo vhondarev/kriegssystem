@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 ./scripts/ccbuild.sh
-./bin/naval team 0:10 1:0 team 0:4 1:6
+./bin/naval team 4:2 6:1 team 4:2 7:1

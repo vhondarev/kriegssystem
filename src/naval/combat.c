@@ -130,7 +130,7 @@ void process_battle_end(uint8_t round, darr_s *fl1, darr_s *fl2, darr_s *t1_raw,
     pack_fleet_to_raw(fl1, t1_raw);
     pack_fleet_to_raw(fl2, t2_raw);
 
-    char result[1024];
+    char result[1024] = {'\0'};
 
     raw_to_str_result(t1_raw, result);
     raw_to_str_result(t2_raw, result);

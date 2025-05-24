@@ -147,7 +147,7 @@ void raw_to_str_result(darr_s *raw, char *result)
     strcat(result, "team ");
     if (raw->size > 0)
     {
-        char *tmp[24];
+        char *tmp[24] = {'\0'};
         for (uint16_t i = 0; i < raw->size; i++)
         {
 
